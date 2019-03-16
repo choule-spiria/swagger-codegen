@@ -1,19 +1,21 @@
-{{#hasEnums}}
 import com.squareup.moshi.Json
-{{/hasEnums}}
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+
 /**
  * {{{description}}}
 {{#vars}}
  * @param {{name}} {{{description}}}
 {{/vars}}
  */
+@Parcelize
 data class {{classname}} (
 {{#requiredVars}}
 {{>data_class_req_var}}{{^-last}},
 {{/-last}}{{/requiredVars}}{{#hasRequired}}{{#hasOptional}},
 {{/hasOptional}}{{/hasRequired}}{{#optionalVars}}{{>data_class_opt_var}}{{^-last}},
 {{/-last}}{{/optionalVars}}
-) {
+) : Parcelable {
 {{#hasEnums}}{{#vars}}{{#isEnum}}
     /**
     * {{{description}}}

@@ -35,21 +35,20 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         super();
         supportsInheritance = true;
 
-        languageSpecificPrimitives = new HashSet<String>(Arrays.asList(
-                "kotlin.Byte",
-                "kotlin.Short",
-                "kotlin.Int",
-                "kotlin.Long",
-                "kotlin.Float",
-                "kotlin.Double",
-                "kotlin.Boolean",
-                "kotlin.Char",
-                "kotlin.String",
-                "kotlin.Array",
-                "kotlin.collections.List",
-                "kotlin.collections.Map",
-                "kotlin.collections.Set"
-        ));
+        languageSpecificPrimitives = new HashSet<>(Arrays.asList(
+                "Byte",
+                "Short",
+                "Int",
+                "Long",
+                "Float",
+                "Double",
+                "Boolean",
+                "Char",
+                "String",
+                "Array",
+                "List",
+                "Map",
+                "Set"));
 
         // this includes hard reserved words defined by https://github.com/JetBrains/kotlin/blob/master/core/descriptors/src/org/jetbrains/kotlin/renderer/KeywordStringsGenerated.java
         // as well as keywords from https://kotlinlang.org/docs/reference/keyword-reference.html
@@ -119,37 +118,40 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
                 "while"
         ));
 
-        defaultIncludes = new HashSet<String>(Arrays.asList(
-                "kotlin.Byte",
-                "kotlin.Short",
-                "kotlin.Int",
-                "kotlin.Long",
-                "kotlin.Float",
-                "kotlin.Double",
-                "kotlin.Boolean",
-                "kotlin.Char",
-                "kotlin.Array",
-                "kotlin.collections.List",
-                "kotlin.collections.Set",
-                "kotlin.collections.Map"
-        ));
+        defaultIncludes = new HashSet<>(Arrays.asList(
+                "Byte",
+                "Short",
+                "Int",
+                "Long",
+                "Float",
+                "Double",
+                "Boolean",
+                "Char",
+                "Array",
+                "String",
+                "List",
+                "Set",
+                "Map",
+                "MutableList",
+                "MutableSet",
+                "MutableMap"));
 
-        typeMapping = new HashMap<String, String>();
-        typeMapping.put("string", "kotlin.String");
-        typeMapping.put("boolean", "kotlin.Boolean");
-        typeMapping.put("integer", "kotlin.Int");
-        typeMapping.put("float", "kotlin.Float");
-        typeMapping.put("long", "kotlin.Long");
-        typeMapping.put("double", "kotlin.Double");
+        typeMapping = new HashMap<>();
+        typeMapping.put("string", "String");
+        typeMapping.put("boolean", "Boolean");
+        typeMapping.put("integer", "Int");
+        typeMapping.put("float", "Float");
+        typeMapping.put("long", "Long");
+        typeMapping.put("double", "Double");
         typeMapping.put("number", "java.math.BigDecimal");
         typeMapping.put("date-time", "java.time.LocalDateTime");
         typeMapping.put("date", "java.time.LocalDateTime");
         typeMapping.put("file", "java.io.File");
-        typeMapping.put("array", "kotlin.Array");
-        typeMapping.put("list", "kotlin.Array");
-        typeMapping.put("map", "kotlin.collections.Map");
-        typeMapping.put("object", "kotlin.Any");
-        typeMapping.put("binary", "kotlin.Array<kotlin.Byte>");
+        typeMapping.put("array", "Array");
+        typeMapping.put("list", "Array");
+        typeMapping.put("map", "Map");
+        typeMapping.put("object", "Any");
+        typeMapping.put("binary", "Array<Byte>");
         typeMapping.put("Date", "java.time.LocalDateTime");
         typeMapping.put("DateTime", "java.time.LocalDateTime");
 
@@ -169,6 +171,7 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         importMapping.put("LocalTime", "java.time.LocalTime");
 
         specialCharReplacements.put(";", "Semicolon");
+        specialCharReplacements.put("-", "_");
 
         cliOptions.clear();
         addOption(CodegenConstants.SOURCE_FOLDER, CodegenConstants.SOURCE_FOLDER_DESC, sourceFolder);
@@ -266,7 +269,7 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
             Property inner = mp.getAdditionalProperties();
 
             // Maps will be keyed only by primitive Kotlin string
-            return getSwaggerType(p) + "<kotlin.String, " + getTypeDeclaration(inner) + ">";
+            return getSwaggerType(p) + "<String, " + getTypeDeclaration(inner) + ">";
         }
         return super.getTypeDeclaration(p);
     }
@@ -537,5 +540,36 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         // provides extra protection against improperly trying to import language primitives and java types
         boolean imports = !type.startsWith("kotlin.") && !type.startsWith("java.") && !defaultIncludes.contains(type) && !languageSpecificPrimitives.contains(type);
         return imports;
+    }
+
+    @Override
+    public String toParamName(String name) {
+        return toVarName( name );
+    }
+
+    @Override
+    public String toVarName(String name) {
+        // sanitize name
+        name = sanitizeName(name); // FIXME: a parameter should not be assigned. Also declare the methods parameters as 'final'.
+
+        if ("_".equals(name)) {
+            name = "_u";
+        }
+
+        // if it's all uppper case, do nothing
+        if (name.matches("^[A-Z_]*$")) {
+            return name;
+        }
+
+        // camelize (lower first character) the variable name
+        // pet_id => petId
+        name = camelize(name, true);
+
+        // for reserved word or word starting with number, append _
+        if (isReservedWord(name) || name.matches("^\\d.*")) {
+            name = escapeReservedWord(name);
+        }
+
+        return name;
     }
 }

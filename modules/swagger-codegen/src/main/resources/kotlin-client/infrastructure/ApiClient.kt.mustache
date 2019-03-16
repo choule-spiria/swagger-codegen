@@ -22,10 +22,10 @@ open class ApiClient(val baseUrl: String) {
         val builder: OkHttpClient.Builder = OkHttpClient.Builder()
 
         @JvmStatic
-        var defaultHeaders: Map<String, String> by ApplicationDelegates.setOnce(mapOf(ContentType to JsonMediaType, Accept to JsonMediaType))
+        var defaultHeaders: MutableMap<String, String> by ApplicationDelegates.setOnce(mutableMapOf(ContentType to JsonMediaType, Accept to JsonMediaType))
 
         @JvmStatic
-        val jsonHeaders: Map<String, String> = mapOf(ContentType to JsonMediaType, Accept to JsonMediaType)
+        val jsonHeaders: MutableMap<String, String> = mutableMapOf(ContentType to JsonMediaType, Accept to JsonMediaType)
     }
 
     inline protected fun <reified T> requestBody(content: T, mediaType: String = JsonMediaType): RequestBody {
@@ -67,8 +67,8 @@ open class ApiClient(val baseUrl: String) {
         
         if(T::class.java == java.io.File::class.java){
             return downloadFileFromResponse(response) as T
-        } else if(T::class == kotlin.Unit::class) {
-            return kotlin.Unit as T
+        } else if(T::class == Unit::class) {
+            return Unit as T
         }
         
         var contentType = response.headers().get("Content-Type")
@@ -79,7 +79,7 @@ open class ApiClient(val baseUrl: String) {
 
 		if(isJsonMime(contentType)){
             return Serializer.moshi.adapter(T::class.java).fromJson(response.body()?.source())
-        } else if(contentType.equals(String.javaClass)){
+        } else if(contentType.equals(String::class.java)){
             return response.body().toString() as T
         } else {
             TODO("Fill in more types!")
@@ -107,11 +107,11 @@ open class ApiClient(val baseUrl: String) {
         val headers = defaultHeaders + requestConfig.headers
 
         if(headers[ContentType] ?: "" == "") {
-            throw kotlin.IllegalStateException("Missing Content-Type header. This is required.")
+            throw IllegalStateException("Missing Content-Type header. This is required.")
         }
 
         if(headers[Accept] ?: "" == "") {
-            throw kotlin.IllegalStateException("Missing Accept header. This is required.")
+            throw IllegalStateException("Missing Accept header. This is required.")
         }
 
         // TODO: support multiple contentType,accept options here.

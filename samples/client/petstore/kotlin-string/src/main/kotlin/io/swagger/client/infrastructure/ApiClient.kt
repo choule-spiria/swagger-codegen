@@ -79,7 +79,7 @@ open class ApiClient(val baseUrl: String) {
 
 		if(isJsonMime(contentType)){
             return Serializer.moshi.adapter(T::class.java).fromJson(response.body()?.source())
-        } else if(contentType.equals(String.javaClass)){
+        } else if(contentType.equals(String::class.java)){
             return response.body().toString() as T
         } else {
             TODO("Fill in more types!")

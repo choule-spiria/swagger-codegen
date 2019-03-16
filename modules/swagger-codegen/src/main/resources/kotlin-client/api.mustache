@@ -5,12 +5,14 @@ package {{apiPackage}}
 {{/imports}}
 
 import {{packageName}}.infrastructure.*
+
 {{#threetenbp}}
-import org.threeten.bp.LocalDateTime
+import org.threeten.bp.LocalDate
+import org.threeten.bp.OffsetDateTime
 {{/threetenbp}}
 
 {{#operations}}
-class {{classname}}(basePath: kotlin.String = "{{{basePath}}}") : ApiClient(basePath) {
+public class {{classname}}(basePath: String = "{{{basePath}}}") : ApiClient(basePath) {
 
     {{#operation}}
     /**
@@ -20,20 +22,30 @@ class {{classname}}(basePath: kotlin.String = "{{{basePath}}}") : ApiClient(base
     {{/allParams}}* @return {{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}
     */{{#returnType}}
     @Suppress("UNCHECKED_CAST"){{/returnType}}
-    fun {{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{#hasMore}}, {{/hasMore}}{{/allParams}}) : {{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Unit{{/returnType}} {
-        val localVariableBody: kotlin.Any? = {{#hasBodyParam}}{{#bodyParams}}{{paramName}}{{/bodyParams}}{{/hasBodyParam}}{{^hasBodyParam}}{{^hasFormParams}}null{{/hasFormParams}}{{#hasFormParams}}mapOf({{#formParams}}"{{{baseName}}}" to {{paramName}}{{#hasMore}}, {{/hasMore}}{{/formParams}}){{/hasFormParams}}{{/hasBodyParam}}
-        val localVariableQuery: MultiValueMap = {{^hasQueryParams}}mapOf(){{/hasQueryParams}}{{#hasQueryParams}}mapOf({{#queryParams}}"{{baseName}}" to {{#isContainer}}toMultiValue({{paramName}}.toList(), "{{collectionFormat}}"){{/isContainer}}{{^isContainer}}listOf("${{paramName}}"){{/isContainer}}{{#hasMore}}, {{/hasMore}}{{/queryParams}}){{/hasQueryParams}}
+    fun {{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#hasMore}},
+					    {{/hasMore}}{{/allParams}}) : {{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Unit{{/returnType}} {
+        val localVariableBody: Any? = {{#hasBodyParam}}{{#bodyParams}}{{paramName}}{{/bodyParams}}{{/hasBodyParam}}{{^hasBodyParam}}{{^hasFormParams}}null{{/hasFormParams}}{{#hasFormParams}}mapOf({{#formParams}}"{{{baseName}}}" to {{paramName}}{{#hasMore}}, {{/hasMore}}{{/formParams}}){{/hasFormParams}}{{/hasBodyParam}}
+        val localVariableQuery: MutableMap<String, List<String>> = {{^hasQueryParams}}mutableMapOf(){{/hasQueryParams}}{{#hasQueryParams}}mutableMapOf(
+			{{#queryParams}}{{#required}}"{{baseName}}" to {{#isContainer}}toMultiValue({{paramName}}.toList(), "{{collectionFormat}}"){{/isContainer}}{{^isContainer}}listOf("${{paramName}}"){{/isContainer}}{{#hasMore}},
+			{{/hasMore}}{{/required}}{{/queryParams}}
+		){{/hasQueryParams}}
+
+		{{#hasQueryParams}}{{#queryParams}}{{^required}}
+		{{paramName}}?.let { value ->
+			localVariableQuery["{{baseName}}"] = listOf("$value")
+		}
+		{{/required}}{{/queryParams}}{{/hasQueryParams}}
         
-        val contentHeaders: kotlin.collections.Map<kotlin.String,kotlin.String> = mapOf({{#hasFormParams}}"Content-Type" to "multipart/form-data"{{/hasFormParams}})
-        val acceptsHeaders: kotlin.collections.Map<kotlin.String,kotlin.String> = mapOf({{#hasProduces}}"Accept" to "{{#produces}}{{#isContainer}}{{mediaType}}.joinToString(separator = collectionDelimiter("{{collectionFormat}}"){{/isContainer}}{{^isContainer}}{{mediaType}}{{/isContainer}}{{#hasMore}}, {{/hasMore}}{{/produces}}"{{/hasProduces}})
-        val localVariableHeaders: kotlin.collections.MutableMap<kotlin.String,kotlin.String> = mutableMapOf({{#hasHeaderParams}}{{#headerParams}}"{{baseName}}" to {{#isContainer}}{{paramName}}.joinToString(separator = collectionDelimiter("{{collectionFormat}}"){{/isContainer}}{{^isContainer}}{{paramName}}{{/isContainer}}{{#hasMore}}, {{/hasMore}}{{/headerParams}}{{/hasHeaderParams}})
+        val contentHeaders: Map<String,String> = mapOf({{#hasFormParams}}"Content-Type" to "multipart/form-data"{{/hasFormParams}})
+        val acceptsHeaders: Map<String,String> = mapOf({{#hasProduces}}"Accept" to "{{#produces}}{{#isContainer}}{{mediaType}}.joinToString(separator = collectionDelimiter("{{collectionFormat}}"){{/isContainer}}{{^isContainer}}{{mediaType}}{{/isContainer}}{{#hasMore}}, {{/hasMore}}{{/produces}}"{{/hasProduces}})
+        val localVariableHeaders: MutableMap<String,String> = mutableMapOf({{#hasHeaderParams}}{{#headerParams}}"{{baseName}}" to {{#isContainer}}{{paramName}}.joinToString(separator = collectionDelimiter("{{collectionFormat}}"){{/isContainer}}{{^isContainer}}{{paramName}}{{/isContainer}}{{#hasMore}}, {{/hasMore}}{{/headerParams}}{{/hasHeaderParams}})
         localVariableHeaders.putAll(contentHeaders)
         localVariableHeaders.putAll(acceptsHeaders)
-        
+
         val localVariableConfig = RequestConfig(
             RequestMethod.{{httpMethod}},
             "{{path}}"{{#pathParams}}.replace("{"+"{{baseName}}"+"}", "${{paramName}}"){{/pathParams}},
-            query = localVariableQuery,
+            query = localVariableQuery.toMap(),
             headers = localVariableHeaders
         )
         val response = request<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Unit{{/returnType}}>(
@@ -41,16 +53,38 @@ class {{classname}}(basePath: kotlin.String = "{{{basePath}}}") : ApiClient(base
             localVariableBody
         )
 
-        return when (response.responseType) {
-            ResponseType.Success -> {{#returnType}}(response as Success<*>).data as {{{returnType}}}{{/returnType}}{{^returnType}}Unit{{/returnType}}
-            ResponseType.Informational -> TODO()
-            ResponseType.Redirection -> TODO()
-            ResponseType.ClientError -> throw ClientException((response as ClientError<*>).body as? String ?: "Client error")
-            ResponseType.ServerError -> throw ServerException((response as ServerError<*>).message ?: "Server error")
-            else -> throw kotlin.IllegalStateException("Undefined ResponseType.")
-        }
-    }
+		val statusCode = response.statusCode as? Int ?: 0
+		val method = localVariableConfig.method.name
+		val path = localVariableConfig.path
+		val headers = response.headers
+		val baseMessage = "$statusCode $method $path"
 
+		return when (response.responseType) {
+			ResponseType.Success       -> {{#returnType}}(response as Success<*>).data as {{{returnType}}}{{/returnType}}{{^returnType}}Unit{{/returnType}}
+
+			ResponseType.Informational -> {
+				val detailMessage = (response as Informational<*>).statusText as? String ?: "Informational error"
+				throw ApiException("$baseMessage -> $detailMessage", null, statusCode, headers)
+			}
+
+			ResponseType.Redirection   -> {
+				val detailMessage = "Redirection error"
+				throw ApiException("$baseMessage -> $detailMessage", null, statusCode, headers)
+			}
+
+			ResponseType.ClientError   -> {
+				val detailMessage = "Client error"
+				val body = (response as ClientError<*>).body
+				throw ApiException("$baseMessage -> $detailMessage", body, statusCode, headers)
+			}
+
+			ResponseType.ServerError   -> {
+				val detailMessage = (response as ServerError<*>).message ?: "Server error"
+				val body = (response as ServerError<*>).body
+				throw ApiException("$baseMessage -> $detailMessage", body, statusCode, headers)
+			}
+		}
+    }
     {{/operation}}
 }
 {{/operations}}

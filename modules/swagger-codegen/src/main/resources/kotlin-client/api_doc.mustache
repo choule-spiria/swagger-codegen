@@ -32,11 +32,8 @@ val {{{paramName}}} : {{{dataType}}} = {{{example}}} // {{{dataType}}} | {{{desc
 try {
     {{#returnType}}val result : {{{returnType}}} = {{/returnType}}apiInstance.{{{operationId}}}({{#allParams}}{{{paramName}}}{{#hasMore}}, {{/hasMore}}{{/allParams}}){{#returnType}}
     println(result){{/returnType}}
-} catch (e: ClientException) {
-    println("4xx response calling {{{classname}}}#{{{operationId}}}")
-    e.printStackTrace()
-} catch (e: ServerException) {
-    println("5xx response calling {{{classname}}}#{{{operationId}}}")
+} catch (e: ApiException) {
+    println("non 2xx response calling {{{classname}}}#{{{operationId}}}")
     e.printStackTrace()
 }
 ```
