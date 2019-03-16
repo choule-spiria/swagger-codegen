@@ -102,10 +102,10 @@ open class AlamofireRequestBuilder<T>: RequestBuilder<T> {
                 }
             })
         } else {
-            let request = makeRequest(manager: manager, method: xMethod!, encoding: encoding, headers: headers)
+            var request = makeRequest(manager: manager, method: xMethod!, encoding: encoding, headers: headers)
             if let onProgressReady = self.onProgressReady {
-                onProgressReady(request.progress)
-            }
+				request = request.downloadProgress{ progress in onProgressReady(progress) }
+			}
             processRequest(request: request, managerId, completion)
         }
 
@@ -132,7 +132,7 @@ open class AlamofireRequestBuilder<T>: RequestBuilder<T> {
                 if stringResponse.result.isFailure {
                     completion(
                         nil,
-                        ErrorResponse.error(stringResponse.response?.statusCode ?? 500, stringResponse.data, stringResponse.result.error as Error!)
+                        ErrorResponse.error(stringResponse.response?.statusCode ?? 500, stringResponse.data, stringResponse.result.error!)
                     )
                     return
                 }
@@ -336,7 +336,7 @@ open class AlamofireDecodableRequestBuilder<T:Decodable>: AlamofireRequestBuilde
                 if stringResponse.result.isFailure {
                     completion(
                         nil,
-                        ErrorResponse.error(stringResponse.response?.statusCode ?? 500, stringResponse.data, stringResponse.result.error as Error!)
+                        ErrorResponse.error(stringResponse.response?.statusCode ?? 500, stringResponse.data, stringResponse.result.error!)
                     )
                     return
                 }
