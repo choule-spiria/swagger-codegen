@@ -87,15 +87,27 @@ void
 
     {{/collectionFormat}}
     {{/queryParams}}
-
     {{prefix}}HttpRequestWorker *worker = new {{prefix}}HttpRequestWorker();
     {{prefix}}HttpRequestInput input(fullPath, "{{httpMethod}}");
 
-    {{#formParams}}
-    if ({{paramName}} != nullptr) {
-        {{^isFile}}input.add_var("{{baseName}}", *{{paramName}});{{/isFile}}{{#isFile}}input.add_file("{{baseName}}", (*{{paramName}}).local_filename, (*{{paramName}}).request_filename, (*{{paramName}}).mime_type);{{/isFile}}
-    }
-    {{/formParams}}
+	{{#formParams}}{{#isDouble}} input.add_var("{{baseName}}", QString::number({{paramName}})); {{/isDouble}}{{/formParams}}
+	{{#formParams}}{{#isFloat}} input.add_var("{{baseName}}", QString::number({{paramName}})); {{/isFloat}}{{/formParams}}
+	{{#formParams}}{{#isInteger}} input.add_var("{{baseName}}", QString::number({{paramName}})); {{/isInteger}}{{/formParams}}
+	{{#formParams}}{{#isLong}} input.add_var("{{baseName}}", QString::number({{paramName}})); {{/isLong}}{{/formParams}}
+	{{#formParams}}{{#isBoolean}} if({{paramName}}) input.add_var("{{baseName}}",  QString("true")) else input.add_var("{{baseName}}",  QString("false")) {{/isBoolean}}{{/formParams}}
+	{{#formParams}}{{#isString}} if ({{paramName}} != nullptr) input.add_var("{{baseName}}", *{{paramName}}); {{/isString}}{{/formParams}}
+	{{#formParams}}{{#isFile}} if ({{paramName}} != nullptr) input.add_file("{{baseName}}", (*{{paramName}}).local_filename, (*{{paramName}}).request_filename, (*{{paramName}}).mime_type);{{/isFile}}{{/formParams}}
+	{{#formParams}}{{#isContainer}}
+	if ({{paramName}} != nullptr) {
+		{{#items.isNumber}}for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", QString::number((*{{paramName}})[i]));{{/items.isNumber}}
+		{{#items.isDouble}}for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", QString::number((*{{paramName}})[i]));{{/items.isDouble}}
+		{{#items.isFloat}}for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", QString::number((*{{paramName}})[i]));{{/items.isFloat}}
+		{{#items.isInteger}}for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", QString::number((*{{paramName}})[i]));{{/items.isInteger}}
+		{{#items.isLong}}for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", QString::number((*{{paramName}})[i]));{{/items.isLong}}
+		{{#items.isBoolean}} if({{paramName}}) input.add_var("{{baseName}}",  QString("true")) else input.add_var("{{baseName}}",  QString("false")) {{/items.isBoolean}}
+		{{#items.isString}} for(int i = 0; i < (*{{paramName}}).size(); i++ ) input.add_var("{{baseName}}", *(*{{paramName}})[i]);{{/items.isString}}
+		{{#items.isFile}} if ({{paramName}} != nullptr) input.add_file("{{baseName}}", (*{{paramName}}).local_filename, (*{{paramName}}).request_filename, (*{{paramName}}).mime_type);{{/items.isFile}}
+	}{{/isContainer}}{{/formParams}}
 
     {{#bodyParams}}
     {{#isContainer}}
