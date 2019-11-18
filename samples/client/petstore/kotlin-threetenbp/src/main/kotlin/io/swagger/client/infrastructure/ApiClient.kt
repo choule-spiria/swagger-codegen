@@ -28,7 +28,7 @@ open class ApiClient(val baseUrl: String) {
         val jsonHeaders: Map<String, String> = mapOf(ContentType to JsonMediaType, Accept to JsonMediaType)
     }
 
-    inline protected fun <reified T> requestBody(content: T, mediaType: String = JsonMediaType): RequestBody {
+    protected inline fun<reified T> requestBody(content: T, mediaType: String = JsonMediaType): RequestBody {
         if(content is File) {
             return RequestBody.create(
                     MediaType.parse(mediaType), content
@@ -62,7 +62,7 @@ open class ApiClient(val baseUrl: String) {
         TODO("requestBody currently only supports JSON body and File body.")
     }
 
-    inline protected fun <reified T: Any?> responseBody(response: Response, mediaType: String = JsonMediaType): T? {
+    protected inline fun<reified T: Any?> responseBody(response: Response, mediaType: String = JsonMediaType): T? {
         if(response.body() == null) return null
         
         if(T::class.java == java.io.File::class.java){
@@ -91,7 +91,7 @@ open class ApiClient(val baseUrl: String) {
         return mime != null && (mime.matches(jsonMime.toRegex()) || mime == "*/*")
     }
 
-    inline protected fun <reified T: Any?> request(requestConfig: RequestConfig, body : Any? = null): ApiInfrastructureResponse<T?> {
+    protected inline fun<reified T: Any?> request(requestConfig: RequestConfig, body : Any? = null): ApiInfrastructureResponse<T?> {
         val httpUrl = HttpUrl.parse(baseUrl) ?: throw IllegalStateException("baseUrl is invalid.")
 
         var urlBuilder = httpUrl.newBuilder()
